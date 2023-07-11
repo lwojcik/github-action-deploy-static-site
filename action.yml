@@ -1,0 +1,95 @@
+name: "Deploy static site to Netlify or Vercel"
+description: "Deploy to Netlify or Vercel when commit id changes"
+author: "Łukasz Wójcik"
+
+branding:
+  color: "gray-dark"
+  icon: "play"
+
+inputs:
+  platform:
+    description: "Name of the platform to deploy to (netlify / vercel - all lowercase)"
+    required: true
+  netlify_deploy_hook_url:
+    description: "Netlify deploy hook URL used to trigger the build"
+  vercel_deploy_hook_url:
+    description: "Vercel deploy hook URL used to trigger the build"
+  cache_file_path:
+    description: "Name of the file to use for caching deployed commit id"
+    default: "commit_id.txt"
+  cache_key_prefix:
+    description: "Cache key prefix"
+    default: "commit_id"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Read latest commit id
+      shell: bash
+      id: read_latest_commit
+      run: |
+        COMMIT_ID=$(git rev-parse HEAD)
+
+        echo "Latest commit id: ${COMMIT_ID}"
+        echo "commit_id=$COMMIT_ID" >> $GITHUB_OUTPUT
+
+    - name: Restore cached commit id
+      id: restore_cached_commit
+      uses: actions/cache/restore@v3
+      with:
+        path: "${{ inputs.cache_file_path }}"
+        key: ${{ inputs.cache_key_prefix }}-${{ steps.read_latest_commit.outputs.commit_id }}
+        restore-keys: ${{ inputs.cache_key_prefix }}-
+
+    - name: Read cached commit id
+      shell: bash
+      id: check_cache
+      run: |
+        echo "Cached commit id: $(cat "${{ inputs.cache_file_path }}" || echo '')"
+        echo "commit_id=$(cat "${{ inputs.cache_file_path }}" || echo '')" >> $GITHUB_OUTPUT
+
+    - name: Compare commit ids
+      shell: bash
+      id: compare_commits
+      run: |
+        if [ "${{ steps.check_cache.outputs.commit_id }}" == "${{ steps.read_latest_commit.outputs.commit_id }}" ]; then
+          echo "Commit ids match. Skipping deployment."
+          echo "should_deploy=false" >> $GITHUB_OUTPUT
+        else
+          echo "Commit ids differ. Deployment will start shortly..."
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Deploy site
+      shell: bash
+      if: steps.compare_commits.outputs.should_deploy == 'true'
+      run: |
+        PLATFORM="${{ inputs.platform }}"
+        NETLIFY_DEPLOY_HOOK_URL="${{ inputs.netlify_deploy_hook_url }}"
+        VERCEL_DEPLOY_HOOK_URL="${{ inputs.vercel_deploy_hook_url }}"
+
+        if [ "$PLATFORM" = "netlify" ]; then
+          echo "Deploying to Netlify"
+          curl -X POST -d {} "$NETLIFY_DEPLOY_HOOK_URL"
+        elif [ "$PLATFORM" = "vercel" ]; then
+          echo "Deploying to Vercel"
+          curl -X POST -d {} "$VERCEL_DEPLOY_HOOK_URL"
+        else
+          echo "Invalid site type provided. Deployment aborted."
+          exit 1
+        fi
+
+    - name: Update latest commit id
+      shell: bash
+      if: steps.compare_commits.outputs.should_deploy == 'true'
+      run: echo "${{ steps.read_latest_commit.outputs.commit_id }}" > "${{ inputs.cache_file_path }}"
+
+    - name: Save new commit id to cache
+      if: steps.compare_commits.outputs.should_deploy == 'true'
+      uses: actions/cache/save@v3
+      with:
+        path: ${{ inputs.cache_file_path }}
+        key: ${{ inputs.cache_key_prefix }}-${{ steps.read_latest_commit.outputs.commit_id }}
