@@ -2,8 +2,6 @@
 
 This GitHub Action deploys your static site to Netlify or Vercel by triggering a build hook from the convenience of your GitHub repository. You can also set it up to run by cron.
 
-The initial plan for this Action was to save build minutes by disabling automatic builds on each push and triggering deployments only when build hooks are called. However, both platforms make it very complicated to have both of the following at once: (1) have automatic deployments disabled on each repo push, and (2) be able to trigger deployments via build hooks. I didn't want to use GitHub to build projects manually - built-in CI/CD tools in Netlify and Vercel are good enough. But I discovered that limitation way too late in the project and I didn't want to scrap so much code, so here it is. :) Leaving it intact in hope it becomes possible to make this Action work the way I wanted.
-
 The Action will skip deployment when no changes are detected since the last run. To store the commit id of the current deployment GitHub cache mechanism is used.
 
 ## Usage with Netlify
