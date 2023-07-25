@@ -6,6 +6,8 @@ The initial plan for this Action was to save build minutes by disabling automati
 
 The Action will skip deployment when no changes are detected since the last run. To store the commit id of the current deployment GitHub cache mechanism is used.
 
+You can also pass `always_deploy` set to `true` to trigger deployment without checking for changes.
+
 ## Usage with Netlify
 
 To obtain build hook URL:
@@ -13,10 +15,10 @@ To obtain build hook URL:
 1. Sign in with Netlify.
 2. Select the site you want to deploy. Go to _Site configuration_.
 3. Select _Build & deploy_.
-5. Scroll down to _Build hooks_ and click _Add build hook_.
-6. Enter a descriptive name of your hook and click _Save_.
-7. Your webook URL has the following format: `https://api.netlify.com/build_hooks/12345679abcdef`. You shouldn't share it with anyone else. I recommend saving it in _Secrets and variables_ section of your GitHub repository settings.
-8. Create your workflow as follows:
+4. Scroll down to _Build hooks_ and click _Add build hook_.
+5. Enter a descriptive name of your hook and click _Save_.
+6. Your webook URL has the following format: `https://api.netlify.com/build_hooks/12345679abcdef`. You shouldn't share it with anyone else. I recommend saving it in _Secrets and variables_ section of your GitHub repository settings.
+7. Create your workflow as follows:
 
 ```yaml
 name: Deploy static site
@@ -32,6 +34,7 @@ jobs:
         with:
           platform: netlify
           netlify_deploy_hook_url: ${{ secrets.NETLIFY_DEPLOY_HOOK_URL }}
+          # always_deploy: true - if you want to skip checking for changes
 ```
 
 ## Usage with Vercel
@@ -58,6 +61,7 @@ jobs:
         with:
           platform: vercel
           vercel_deploy_hook_url: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+          # always_deploy: true - if you want to skip checking for changes
 ```
 
 ## License
