@@ -12,6 +12,9 @@ inputs:
     required: true
   netlify_deploy_hook_url:
     description: "Netlify deploy hook URL used to trigger the build"
+  always_deploy:
+    description: "Skip cache check and always deploy even if no changes are detected"
+    default: "false"
   vercel_deploy_hook_url:
     description: "Vercel deploy hook URL used to trigger the build"
   cache_file_path:
@@ -55,7 +58,10 @@ runs:
       shell: bash
       id: compare_commits
       run: |
-        if [ "${{ steps.check_cache.outputs.commit_id }}" == "${{ steps.read_latest_commit.outputs.commit_id }}" ]; then
+        if [ "${{ inputs.always_deploy }}" == "true" ]; then
+          echo "always_deploy was set to true. Deployment will start shorty..."
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+        elif [ "${{ steps.check_cache.outputs.commit_id }}" == "${{ steps.read_latest_commit.outputs.commit_id }}" ]; then
           echo "Commit ids match. Skipping deployment."
           echo "should_deploy=false" >> $GITHUB_OUTPUT
         else
