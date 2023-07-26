@@ -90,11 +90,11 @@ runs:
 
     - name: Update latest commit id
       shell: bash
-      if: steps.compare_commits.outputs.should_deploy == 'true' && steps.read_latest_commit.outputs.always_deploy != 'true'
+      if: steps.compare_commits.outputs.should_deploy == 'true' && inputs.always_deploy != 'true'
       run: echo "${{ steps.read_latest_commit.outputs.commit_id }}" > "${{ inputs.cache_file_path }}"
 
     - name: Save new commit id to cache
-      if: steps.compare_commits.outputs.should_deploy == 'true' && steps.read_latest_commit.outputs.always_deploy != 'true'
+      if: steps.compare_commits.outputs.should_deploy == 'true' && inputs.always_deploy != 'true'
       uses: actions/cache/save@v3
       with:
         path: ${{ inputs.cache_file_path }}
